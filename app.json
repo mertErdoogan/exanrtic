@@ -74,7 +74,8 @@
         }
       ],
       "@maplibre/maplibre-react-native",
-      "expo-image"
+      "expo-image",
+      "./plugins/withDisableUserScriptSandboxing"
     ],
     "experiments": {
       "typedRoutes": true
