@@ -8,6 +8,7 @@ import { Alert, Share, View } from 'react-native';
 import { Field } from '@/components/Field';
 import { Button, Chip, Rule, Screen, Section, Text } from '@/components/ui';
 import { deleteAllData, exportAllData } from '@/db/repo';
+import { availableStyles, resolveStyle, usingDemoMap } from '@/features/maps/styles';
 import { useSettings } from '@/features/settings/store';
 import { sweepFromDisplay, sweepToDisplay } from '@/lib/units';
 import { space } from '@/theme/tokens';
@@ -74,6 +75,21 @@ export default function Settings() {
         onEndEditing={saveSweep}
       />
 
+      <Section label={t('settings.mapLayer')}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+          {availableStyles().map((st) => (
+            <Chip
+              key={st.id}
+              label={t(`maps.style.${st.id}`)}
+              selected={resolveStyle(s.mapStyle).id === st.id}
+              onPress={() => s.update({ mapStyle: st.id })}
+            />
+          ))}
+        </View>
+        {usingDemoMap() ? <Text variant="caption">{t('maps.demoWarning')}</Text> : null}
+      </Section>
+
+      <Button title={t('settings.offlineMaps')} kind="secondary" onPress={() => router.push('/offline-maps')} />
       <Button title={t('settings.coach')} kind="secondary" onPress={() => router.push('/coach')} />
 
       <Rule strong />
@@ -82,6 +98,11 @@ export default function Settings() {
         <Text variant="muted">{t('settings.privacyBody')}</Text>
         <Button title={t('settings.exportData')} kind="secondary" onPress={exportData} />
         <Button title={t('settings.deleteAll')} kind="danger" onPress={deleteAll} />
+      </Section>
+
+      <Section label={t('settings.legal')}>
+        <Button title={t('settings.privacyPolicy')} kind="ghost" style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }} onPress={() => router.push('/legal/privacy')} />
+        <Button title={t('settings.terms')} kind="ghost" style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }} onPress={() => router.push('/legal/terms')} />
       </Section>
 
       <Text variant="caption">{t('settings.version', { v: Constants.expoConfig?.version ?? '—' })}</Text>

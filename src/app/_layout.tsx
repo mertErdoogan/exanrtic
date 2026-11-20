@@ -92,6 +92,8 @@ export default function RootLayout() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="coach" />
           <Stack.Screen name="report" />
+          <Stack.Screen name="offline-maps" />
+          <Stack.Screen name="legal/[doc]" />
         </Stack.Protected>
         <Stack.Protected guard={!onboarded}>
           <Stack.Screen name="onboarding" />

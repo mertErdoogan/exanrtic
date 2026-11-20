@@ -29,7 +29,11 @@ Bu depo **v0.1** sürümüdür: çevrimdışı çalışan çekirdek uygulama + y
 | Cihazlarım: katalogdan (Nokta Legend 2, Magnetar 9000) veya elle; garanti takibi | ✅ |
 | Sallama koçu (deneysel): jiroskopla sallama temposu, hızlıysa titreşim | ✅ |
 | Saha Raporu: bölge tarihi + toprak + hava + cihaza özel öneri + kişisel geçmiş (Supabase gerekli) | ✅ kod hazır, sunucu kurulumu sende |
+| Harita katmanları: uydu / arazi / sokak (MapTiler), arama ekranında tek dokunuşla değişir | ✅ |
+| Çevrimdışı harita: sahanın veya bulunduğun yerin çevresini (1–3 km) önceden indir | ✅ |
 | Ayarlar: verileri dışa aktar (JSON), tüm verileri sil | ✅ |
+| Gizlilik politikası ve kullanım koşulları (TR/EN taslak, uygulama içinde) | ✅ taslak, hukuk onayı bekliyor |
+| Uygulama ikonu ve açılış ekranı | ✅ |
 | Grup araması, sosyal katman, akıllı saat, Bluetooth | ⏳ sonraki fazlar |
 
 **Gizlilik ilkesi:** aramalar, rota, kazılar ve fotoğraflar yalnızca telefonda (SQLite) tutulur. Sunucuya giden tek şey Saha Raporu isteğidir ve o da konumu ~5 km'lik bir ızgaraya yuvarlanmış halde gönderir; buluntu yeri asla telefondan çıkmaz.
@@ -69,8 +73,17 @@ npm test         # ✓ "12 passed" görmelisin
 cp .env.example .env
 ```
 
-Harita için şimdilik boş bırakabilirsin; MapLibre'nin demo haritası açılır (detayı düşük, sadece test için).
-Gerçek uydu/arazi görünümü için [MapTiler](https://www.maptiler.com/) hesabı açıp stil adresini `EXPO_PUBLIC_MAP_STYLE_URL` satırına yaz.
+Harita için şimdilik boş bırakabilirsin; MapLibre'nin demo haritası açılır (detayı düşük, sadece test için) ve ekranda "demo harita" uyarısı görünür.
+
+Gerçek uydu/arazi görünümü için:
+1. [MapTiler](https://www.maptiler.com/) hesabı aç (ücretsiz katman test için yeterli).
+2. *API Keys* bölümünde yeni bir anahtar oluştur; *Allowed bundle IDs* alanına `com.dedektorasistani.app` yaz (anahtar uygulamanın içinde durduğu için bu kısıtlama önemli).
+3. Anahtarı `.env` içindeki `EXPO_PUBLIC_MAPTILER_KEY` satırına yapıştır.
+4. Uygulamayı yeniden başlat: Ayarlar > Harita katmanı'nda uydu / arazi / sokak seçenekleri görünür.
+
+Kendi stilini kullanmak istersen `EXPO_PUBLIC_MAP_STYLE_URL` satırına tam stil adresini yazabilirsin; listeye "Özel" olarak eklenir.
+
+> ⚠️ Çevrimdışı indirme: MapTiler'ın ücretsiz planında karoların cihazda saklanma koşulları sınırlı olabilir. Yayına çıkmadan önce kullandığın planın *offline caching* şartlarını kontrol et.
 
 ### 4. iPhone'da çalıştır
 
@@ -87,12 +100,28 @@ npx expo run:ios --device
 
 ### 5. (İsteğe bağlı) Bulutta derleme — EAS
 
-Mac'te Xcode kurmak istemezsen ya da TestFlight'a göndermek istersen:
+`eas.json` hazır; `build:configure` çalıştırmana gerek yok. Üç profil var:
+
+| Profil | Ne için | Kim yükleyebilir |
+|---|---|---|
+| `development` | Geliştirme sürümü (Metro'ya bağlanır, kod değişince anında yenilenir) | Kayıtlı test cihazları |
+| `preview` | Sahada denemek için tek başına çalışan sürüm | Kayıtlı test cihazları (Android'de APK) |
+| `production` | App Store / Google Play | Mağaza; derleme numarası otomatik artar |
 
 ```bash
 npx eas-cli@latest login
-npx eas-cli@latest build:configure
-npx eas-cli@latest build --profile development --platform ios
+npx eas-cli@latest init                      # projeyi Expo hesabına bağlar (bir kez)
+npx eas-cli@latest device:create             # iPhone'unu test cihazı olarak kaydet (bir kez)
+npx eas-cli@latest build --profile preview --platform ios
+```
+
+Derleme bitince gelen bağlantıyı iPhone'da açıp kurarsın — kablo gerekmez.
+⚠️ iOS için EAS derlemesi **ücretli Apple Developer hesabı** (yıllık 99 $) ister. Ücretsiz Apple ID ile sadece Xcode üzerinden kendi telefonuna kurabilirsin (7 günde bir yenilenir).
+
+`.env` dosyası EAS'e yüklenmez. Bulut derlemesinde anahtarlar için:
+
+```bash
+npx eas-cli@latest env:create --name EXPO_PUBLIC_MAPTILER_KEY --value <anahtar> --environment preview --environment production
 ```
 
 ## Saha testi: Faz 0 kontrol listesi
@@ -196,6 +225,7 @@ Edge function testleri: `cd supabase/functions/site-report && deno test`.
 
 - **Harita:** varsayılan demo haritası düşük detaylıdır; saha kullanımı için uydu/arazi stili şart (MapTiler vb.).
 - **Korunan alanlar:** şimdilik anahtar kelime filtresi var. Sıradaki adım, ülkelerin resmi miras kayıtlarını (ör. İngiltere için Historic England) haritada uyarı katmanı olarak göstermek.
-- **Çevrimdışı harita indirme:** MapLibre `OfflineManager` ile eklenecek.
+- **Yasal metinler:** `src/features/legal/documents.ts` içindeki gizlilik politikası ve kullanım koşulları **taslaktır**; mağazaya göndermeden önce bir avukata (KVKK + GDPR) okutulmalı, `[köşeli parantez]` alanları doldurulmalı ve aynı metin bir web adresinde yayınlanmalı (App Store bunu ister).
+- **Abonelik:** RevenueCat altyapısı henüz yok.
 - **Fotoğraf EXIF:** konum verisi istenmiyor; paylaşım özelliği geldiğinde dosyadan meta veri silme eklenecek.
 - **Sırada:** iyi gün bildirimleri, sezon özeti kartı, ustalık yolu, grup araması, akıllı saat, Nokta Bluetooth entegrasyonu.

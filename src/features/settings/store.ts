@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
 import { create } from 'zustand';
 
 import { db } from '@/db/client';
 import { settings } from '@/db/schema';
+import type { MapStyleId } from '@/features/maps/styles';
 import i18n, { deviceLanguage, type Language } from '@/i18n';
 import type { UnitSystem } from '@/lib/units';
 
@@ -11,6 +11,7 @@ export type AppSettings = {
   units: UnitSystem;
   sweepWidthM: number;
   onboarded: boolean;
+  mapStyle: MapStyleId;
 };
 
 const DEFAULTS: AppSettings = {
@@ -18,7 +19,10 @@ const DEFAULTS: AppSettings = {
   units: 'metric',
   sweepWidthM: 1,
   onboarded: false,
+  mapStyle: 'satellite',
 };
+
+const MAP_STYLES: MapStyleId[] = ['satellite', 'topo', 'streets', 'custom', 'demo'];
 
 type SettingsState = AppSettings & {
   hydrated: boolean;
@@ -32,6 +36,7 @@ function parse(raw: Record<string, string>): AppSettings {
     units: raw.units === 'imperial' ? 'imperial' : 'metric',
     sweepWidthM: raw.sweepWidthM ? Math.min(3, Math.max(0.3, Number(raw.sweepWidthM))) : DEFAULTS.sweepWidthM,
     onboarded: raw.onboarded === 'true',
+    mapStyle: MAP_STYLES.includes(raw.mapStyle as MapStyleId) ? (raw.mapStyle as MapStyleId) : DEFAULTS.mapStyle,
   };
 }
 
@@ -52,12 +57,10 @@ export const useSettings = create<SettingsState>((set, get) => ({
     const now = Date.now();
     for (const [key, value] of Object.entries(patch)) {
       const v = String(value);
-      const existing = await db.select().from(settings).where(eq(settings.key, key));
-      if (existing.length) {
-        await db.update(settings).set({ value: v, updatedAt: now }).where(eq(settings.key, key));
-      } else {
-        await db.insert(settings).values({ key, value: v, updatedAt: now });
-      }
+      await db
+        .insert(settings)
+        .values({ key, value: v, updatedAt: now })
+        .onConflictDoUpdate({ target: settings.key, set: { value: v, updatedAt: now } });
     }
     if (patch.language) await i18n.changeLanguage(patch.language);
     set({
@@ -65,6 +68,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
       units: next.units,
       sweepWidthM: next.sweepWidthM,
       onboarded: next.onboarded,
+      mapStyle: next.mapStyle,
     });
   },
 }));

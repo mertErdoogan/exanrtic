@@ -1,10 +1,12 @@
 /**
  * Public runtime configuration. Only EXPO_PUBLIC_* values reach the app
  * bundle; secret keys (AI provider, weather) live in Supabase functions.
+ * A MapTiler key is a public, domain/app-restricted key by design.
  */
 export const config = {
-  mapStyleUrl: process.env.EXPO_PUBLIC_MAP_STYLE_URL || 'https://demotiles.maplibre.org/style.json',
-  usingDemoMap: !process.env.EXPO_PUBLIC_MAP_STYLE_URL,
+  /** Optional single custom style URL; overrides the built-in style list. */
+  customMapStyleUrl: process.env.EXPO_PUBLIC_MAP_STYLE_URL || '',
+  maptilerKey: process.env.EXPO_PUBLIC_MAPTILER_KEY || '',
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
 } as const;

@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { DigResult } from '@/db/schema';
-import { config } from '@/lib/config';
+import { resolveStyle } from '@/features/maps/styles';
+import { useSettings } from '@/features/settings/store';
 import { splitSegments, type TimedPoint } from '@/lib/geo';
 import { colors } from '@/theme/tokens';
 
@@ -29,6 +30,9 @@ export function HuntMap({
   followUser?: boolean;
   zoom?: number;
 }) {
+  const preferredStyle = useSettings((s) => s.mapStyle);
+  const style = resolveStyle(preferredStyle);
+
   const lines = useMemo<FeatureCollection>(
     () => ({
       type: 'FeatureCollection',
@@ -67,7 +71,7 @@ export function HuntMap({
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Map style={StyleSheet.absoluteFill} mapStyle={config.mapStyleUrl} logo={false} compass attribution>
+      <Map style={StyleSheet.absoluteFill} mapStyle={style.url} logo={false} compass attribution>
         <Camera
           initialViewState={{ center: [center.lng, center.lat], zoom }}
           trackUserLocation={followUser ? 'default' : undefined}

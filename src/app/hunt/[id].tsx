@@ -17,6 +17,7 @@ import {
   resumeHunt,
 } from '@/features/hunt/service';
 import { useTrack } from '@/features/hunt/useTrack';
+import { nextStyle, resolveStyle } from '@/features/maps/styles';
 import { useSettings } from '@/features/settings/store';
 import { cleanTrack, computeCoverage } from '@/lib/geo';
 import { useData } from '@/lib/useData';
@@ -37,6 +38,8 @@ export default function ActiveHunt() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const units = useSettings((s) => s.units);
+  const mapStyle = useSettings((s) => s.mapStyle);
+  const updateSettings = useSettings((s) => s.update);
   const now = useNow();
 
   const [busy, setBusy] = useState(false);
@@ -142,16 +145,28 @@ export default function ActiveHunt() {
           digs={digs}
         />
         <SafeAreaView edges={['top']} style={styles.mapHeader} pointerEvents="box-none">
-          <View style={styles.headerCard}>
-            <Text variant="label" tone="dark">
-              {session.status === 'active' ? t('hunt.active') : t('hunt.paused')} · {formatDuration(now - session.startedAt)}
-            </Text>
-            <Text variant="heading" tone="dark">
-              {site.name}
-            </Text>
-            <Text variant="caption" tone="dark">
-              {gpsLabel}
-            </Text>
+          <View style={styles.headerRow} pointerEvents="box-none">
+            <View style={styles.headerCard}>
+              <Text variant="label" tone="dark">
+                {session.status === 'active' ? t('hunt.active') : t('hunt.paused')} · {formatDuration(now - session.startedAt)}
+              </Text>
+              <Text variant="heading" tone="dark">
+                {site.name}
+              </Text>
+              <Text variant="caption" tone="dark">
+                {gpsLabel}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('maps.layer')}
+              onPress={() => void updateSettings({ mapStyle: nextStyle(mapStyle).id })}
+              style={({ pressed }) => [styles.layerButton, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text variant="label" tone="dark" style={{ color: colors.textOnInk }}>
+                {t(`maps.style.${resolveStyle(mapStyle).id}`)}
+              </Text>
+            </Pressable>
           </View>
         </SafeAreaView>
       </View>
@@ -194,14 +209,22 @@ export default function ActiveHunt() {
 const styles = StyleSheet.create({
   mapWrap: { flex: 1, backgroundColor: colors.inkRaised },
   mapHeader: { position: 'absolute', left: 0, right: 0, top: 0, paddingHorizontal: space.lg },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space.sm },
+  layerButton: {
+    marginTop: space.sm,
+    minHeight: touch.min,
+    paddingHorizontal: space.lg,
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(21,19,15,0.88)',
+  },
   headerCard: {
     marginTop: space.sm,
     backgroundColor: 'rgba(21,19,15,0.88)',
     borderRadius: radius.md,
     padding: space.lg,
     gap: 2,
-    alignSelf: 'flex-start',
-    maxWidth: '85%',
+    flexShrink: 1,
   },
   panel: { backgroundColor: colors.ink, paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.lg },
   dug: {

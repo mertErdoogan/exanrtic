@@ -114,6 +114,17 @@ export default function SiteDetail() {
         </Section>
       ) : null}
 
+      <Button
+        title={t('offline.forSite')}
+        kind="secondary"
+        onPress={() =>
+          router.push({
+            pathname: '/offline-maps',
+            params: { siteId: site.id, name: site.name, lat: String(site.centerLat), lng: String(site.centerLng) },
+          })
+        }
+      />
+
       <SiteForm key={`${site.id}-${site.updatedAt}`} site={site} onSaved={reload} />
 
       <Section label={t('sites.history')}>
