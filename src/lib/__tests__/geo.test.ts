@@ -8,7 +8,7 @@ function walk(n: number, stepM: number, secondsPerStep = 2, segment = 0, start =
     lat: 41 + (start + i) * stepM * M,
     lng: 29,
     ts: (start + i) * secondsPerStep * 1000,
-    accuracy: 5,
+    accuracy: 3, // a good open-sky fix
     segment,
   }));
 }
@@ -71,5 +71,16 @@ describe('nearestWithin', () => {
     const far = { id: 'far', lat: 41 + 900 * M, lng: 29 };
     expect(nearestWithin(origin, [far, near], 400)?.item.id).toBe('near');
     expect(nearestWithin(origin, [far], 400)).toBeNull();
+  });
+});
+
+describe('cleanTrack with poor accuracy', () => {
+  it('drops wandering indoor fixes but keeps clean outdoor steps', () => {
+    const base = { lat: 41.0, lng: 29.0 };
+    const north = (m: number) => ({ lat: base.lat + m / 111_320, lng: base.lng });
+    const indoor = [0, 4, 2, 6, 3].map((m, i) => ({ ...north(m), ts: i * 3000, accuracy: 15 }));
+    expect(cleanTrack(indoor)).toHaveLength(1);
+    const outdoor = [0, 3, 6, 9].map((m, i) => ({ ...north(m), ts: i * 3000, accuracy: 4 }));
+    expect(cleanTrack(outdoor)).toHaveLength(4);
   });
 });

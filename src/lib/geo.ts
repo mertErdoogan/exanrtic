@@ -22,12 +22,23 @@ export function haversineM(a: LatLng, b: LatLng): number {
 
 /** Tuning for field GPS noise while walking slowly with a detector. */
 export const TRACK_FILTER = {
-  maxAccuracyM: 30,
+  maxAccuracyM: 25,
   /** A detectorist rarely moves faster than a brisk walk; larger jumps are GPS spikes. */
   maxSpeedMps: 3.5,
   /** Ignore jitter while standing still and digging. */
   minStepM: 1.5,
+  /**
+   * A step must also exceed this share of the reported accuracy. With a 4 m fix
+   * outdoors that is ~2.4 m; with a 15 m fix (indoors, under trees) it is 9 m,
+   * so wandering fixes no longer draw zigzags.
+   */
+  accuracyStepRatio: 0.6,
 } as const;
+
+function requiredStepM(a: TimedPoint, b: TimedPoint): number {
+  const acc = Math.max(a.accuracy ?? 0, b.accuracy ?? 0);
+  return Math.max(TRACK_FILTER.minStepM, acc * TRACK_FILTER.accuracyStepRatio);
+}
 
 /**
  * Drops low-accuracy fixes, GPS spikes and stationary jitter.
@@ -45,7 +56,7 @@ export function cleanTrack<T extends TimedPoint>(points: T[]): T[] {
     const d = haversineM(prev, p);
     const dt = Math.max(1, (p.ts - prev.ts) / 1000);
     if (d / dt > TRACK_FILTER.maxSpeedMps) continue;
-    if (d < TRACK_FILTER.minStepM) continue;
+    if (d < requiredStepM(prev, p)) continue;
     out.push(p);
   }
   return out;
